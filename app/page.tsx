@@ -54,10 +54,10 @@ const topics: Topic[] = topicGroups.flatMap((group) =>
 ).map((topic, index) => ({ ...topic, id: index + 1 }));
 
 const modeCards = [
-  { id: "guided", icon: "▶", label: "Aula guiada", detail: "Conduza a turma em tela cheia", color: "cyan" },
+  { id: "guided", icon: "▶", label: "Apresentar aula", detail: "Abra o roteiro em tela cheia para os alunos", color: "cyan" },
   { id: "group", icon: "◎", label: "Atividade em grupo", detail: "Investigue e decida em equipe", color: "lime" },
   { id: "individual", icon: "◌", label: "Atividade individual", detail: "Cada aluno no próprio ritmo", color: "violet" },
-  { id: "create", icon: "+", label: "Criar aula", detail: "Combine experiências e perguntas", color: "amber" },
+  { id: "create", icon: "+", label: "Criar ou editar aula", detail: "Altere textos, ordem, tempo e experiências", color: "amber" },
 ] as const;
 
 const lessonSteps = [
@@ -79,17 +79,106 @@ function topicDescription(topic: Topic) {
   return action[topic.module];
 }
 
+type LessonBlock = {
+  id: string;
+  topicId?: number;
+  title: string;
+  body: string;
+  category: string;
+  module: ModuleKey;
+  minutes: number;
+};
+
+const initialLessonBlocks: LessonBlock[] = lessonSteps.map((step, index) => ({
+  id: `respiracao-${index + 1}`,
+  topicId: 116 + index,
+  title: step.title,
+  body: step.text,
+  category: "Respiração celular",
+  module: "biosim",
+  minutes: index === 2 ? 10 : 5,
+}));
+
+function ExperienceDemo({ topic, compact = false }: { topic: Topic; compact?: boolean }) {
+  const [primary, setPrimary] = useState(60);
+  const [secondary, setSecondary] = useState(35);
+  const [selectedEvidence, setSelectedEvidence] = useState<number[]>([]);
+  const [answer, setAnswer] = useState("");
+  const [storyStep, setStoryStep] = useState(0);
+  const [trials, setTrials] = useState<Array<{ variable: number; result: number }>>([]);
+
+  const output = Math.max(2, Math.round((primary * .38) - (secondary * .08)));
+  const story = [
+    `Você entra no fenômeno “${topic.title}”. O que observar primeiro?`,
+    "Uma mudança aparece no sistema. Compare o antes e o depois.",
+    "A evidência aponta para uma relação de causa e efeito.",
+    "Agora formule uma explicação científica para o que aconteceu.",
+  ];
+
+  if (topic.module === "biosim") return (
+    <div className={`experience-demo sim-demo ${compact ? "compact" : ""}`}>
+      <div className="sim-visual" style={{ "--activity": `${primary}%`, "--stress": `${secondary}%` } as React.CSSProperties}>
+        <div className="sim-cell"><div className="sim-organelle"><i /><i /><i /><i /></div></div>
+        <span className="particle particle-a" /><span className="particle particle-b" /><span className="particle particle-c" />
+        <div className="sim-reading"><small>Resposta do sistema</small><strong>{output} unidades</strong></div>
+      </div>
+      <div className="demo-controls">
+        <label><span>Variável principal <b>{primary}%</b></span><input type="range" min="0" max="100" value={primary} onChange={(e) => setPrimary(Number(e.target.value))} /></label>
+        <label><span>Fator de estresse <b>{secondary}%</b></span><input type="range" min="0" max="100" value={secondary} onChange={(e) => setSecondary(Number(e.target.value))} /></label>
+        <p>Altere os controles e observe a resposta imediatamente. Tente explicar por que o resultado mudou.</p>
+      </div>
+    </div>
+  );
+
+  if (topic.module === "bioquest") {
+    const clues = ["A mudança ocorre depois do fator ambiental.", "O grupo-controle não apresenta o mesmo efeito.", "O resultado se repete em três observações."];
+    return (
+      <div className={`experience-demo quest-demo ${compact ? "compact" : ""}`}>
+        <div className="case-board"><span className="case-label">CASO EM INVESTIGAÇÃO</span><h3>{topic.title}</h3><p>Selecione as evidências relevantes e decida qual explicação é mais consistente.</p><div className="evidence-list">{clues.map((clue, index) => <button key={clue} className={selectedEvidence.includes(index) ? "selected" : ""} onClick={() => setSelectedEvidence((items) => items.includes(index) ? items.filter((item) => item !== index) : [...items, index])}><b>{index + 1}</b>{clue}</button>)}</div></div>
+        <div className="decision-panel"><small>SUA CONCLUSÃO</small><button className={answer === "causal" ? "selected" : ""} onClick={() => setAnswer("causal")}>Existe relação causal</button><button className={answer === "coincidence" ? "selected" : ""} onClick={() => setAnswer("coincidence")}>É apenas coincidência</button><div className={`feedback ${answer && selectedEvidence.length >= 2 ? "show" : ""}`}>{answer && selectedEvidence.length >= 2 ? (answer === "causal" ? "Conclusão sustentada pelas evidências selecionadas." : "Revise: controle e repetição fortalecem uma relação causal.") : "Escolha ao menos duas evidências antes de concluir."}</div></div>
+      </div>
+    );
+  }
+
+  if (topic.module === "biochallenge") return (
+    <div className={`experience-demo challenge-demo ${compact ? "compact" : ""}`}>
+      <div className="mission-map"><span>MISSÃO</span><h3>{topic.title}</h3><div className="mission-score"><i style={{ width: `${primary}%` }} /><b>{primary} pontos de equilíbrio</b></div><div className="mission-nodes"><button onClick={() => setPrimary((v) => Math.min(100, v + 12))}>+ Proteger</button><button onClick={() => setPrimary((v) => Math.max(0, v - 8))}>Usar recurso</button><button onClick={() => setSecondary((v) => Math.min(100, v + 10))}>Investigar</button></div></div>
+      <div className="mission-brief"><small>OBJETIVO</small><h4>Chegue a 85 pontos sem perder o controle do sistema.</h4><p>Cada decisão altera o cenário. Compare estratégias e justifique sua escolha final.</p><strong className={primary >= 85 ? "success" : ""}>{primary >= 85 ? "Missão concluída" : "Missão em andamento"}</strong></div>
+    </div>
+  );
+
+  if (topic.module === "biostory") return (
+    <div className={`experience-demo story-demo ${compact ? "compact" : ""}`}>
+      <div className="story-scene"><span>CAPÍTULO {storyStep + 1} DE {story.length}</span><h3>{topic.title}</h3><p>{story[storyStep]}</p><div className="story-orbit"><i /><i /><i /></div></div>
+      <div className="story-nav"><button disabled={storyStep === 0} onClick={() => setStoryStep((step) => step - 1)}>← Voltar</button><div>{story.map((_, index) => <i key={index} className={index === storyStep ? "active" : ""} />)}</div><button disabled={storyStep === story.length - 1} onClick={() => setStoryStep((step) => step + 1)}>Continuar →</button></div>
+    </div>
+  );
+
+  const predicted = Math.round((primary * .7) + (secondary * .22));
+  return (
+    <div className={`experience-demo lab-demo ${compact ? "compact" : ""}`}>
+      <div className="lab-bench"><span>EXPERIMENTO</span><h3>{topic.title}</h3><label>Variável independente <b>{primary}</b><input type="range" min="10" max="100" value={primary} onChange={(e) => setPrimary(Number(e.target.value))} /></label><label>Condição de controle <b>{secondary}</b><input type="range" min="0" max="80" value={secondary} onChange={(e) => setSecondary(Number(e.target.value))} /></label><button onClick={() => setTrials((items) => [...items, { variable: primary, result: predicted }])}>Coletar medição</button></div>
+      <div className="data-table"><div><span>Teste</span><span>Variável</span><span>Resultado</span></div>{trials.length ? trials.map((trial, index) => <div key={`${trial.variable}-${index}`}><b>{index + 1}</b><span>{trial.variable}</span><strong>{trial.result}</strong></div>) : <p>Altere uma variável e colete a primeira medição.</p>}</div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [view, setView] = useState<ViewKey>("inicio");
   const [activeMode, setActiveMode] = useState<(typeof modeCards)[number]["id"]>("guided");
   const [activeModule, setActiveModule] = useState<ModuleKey | "all">("all");
   const [search, setSearch] = useState("");
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  const [experienceTopic, setExperienceTopic] = useState<Topic | null>(null);
   const [lessonOpen, setLessonOpen] = useState(false);
   const [lessonStep, setLessonStep] = useState(0);
-  const [oxygen, setOxygen] = useState(72);
-  const [hypothesis, setHypothesis] = useState<string | null>(null);
-  const [builder, setBuilder] = useState<Topic[]>([topics[115], topics[118], topics[121]]);
+  const [oxygen] = useState(72);
+  const [lessonTitle, setLessonTitle] = useState("Respiração celular: para onde vai a energia?");
+  const [lessonGrade, setLessonGrade] = useState("Ensino Médio");
+  const [lessonDuration, setLessonDuration] = useState(35);
+  const [lessonMode, setLessonMode] = useState("Aula guiada");
+  const [lessonBlocks, setLessonBlocks] = useState<LessonBlock[]>(initialLessonBlocks);
+  const [lessonLoaded, setLessonLoaded] = useState(false);
   const [toast, setToast] = useState("");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
 
@@ -107,6 +196,26 @@ export default function Home() {
     return () => window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
   }, []);
 
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("biolab-lesson");
+      if (saved) {
+        const lessonData = JSON.parse(saved) as { title?: string; grade?: string; duration?: number; mode?: string; blocks?: LessonBlock[] };
+        if (lessonData.title) setLessonTitle(lessonData.title);
+        if (lessonData.grade) setLessonGrade(lessonData.grade);
+        if (lessonData.duration) setLessonDuration(lessonData.duration);
+        if (lessonData.mode) setLessonMode(lessonData.mode);
+        if (lessonData.blocks?.length) setLessonBlocks(lessonData.blocks);
+      }
+    } catch { /* Mantém o roteiro inicial se o armazenamento estiver indisponível. */ }
+    setLessonLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!lessonLoaded) return;
+    window.localStorage.setItem("biolab-lesson", JSON.stringify({ title: lessonTitle, grade: lessonGrade, duration: lessonDuration, mode: lessonMode, blocks: lessonBlocks }));
+  }, [lessonBlocks, lessonDuration, lessonGrade, lessonLoaded, lessonMode, lessonTitle]);
+
   const filteredTopics = useMemo(() => {
     const term = search.trim().toLowerCase();
     return topics.filter((topic) =>
@@ -121,8 +230,42 @@ export default function Home() {
   }
 
   function addToBuilder(topic: Topic) {
-    if (!builder.some((item) => item.id === topic.id)) setBuilder((items) => [...items, topic]);
-    flash("Experiência adicionada ao roteiro");
+    if (!lessonBlocks.some((item) => item.topicId === topic.id)) {
+      setLessonBlocks((items) => [...items, { id: `topic-${topic.id}-${Date.now()}`, topicId: topic.id, title: topic.title, body: topicDescription(topic), category: topic.category, module: topic.module, minutes: 8 }]);
+      flash("Experiência adicionada ao roteiro editável");
+    } else flash("Esta experiência já está no roteiro");
+  }
+
+  function updateLessonBlock(id: string, patch: Partial<LessonBlock>) {
+    setLessonBlocks((items) => items.map((item) => item.id === id ? { ...item, ...patch } : item));
+  }
+
+  function moveLessonBlock(index: number, direction: -1 | 1) {
+    setLessonBlocks((items) => {
+      const next = [...items];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return items;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
+  function addBlankBlock() {
+    setLessonBlocks((items) => [...items, { id: `custom-${Date.now()}`, title: "Novo momento da aula", body: "Escreva aqui o que os alunos verão nesta etapa.", category: "Bloco personalizado", module: "biolab", minutes: 5 }]);
+  }
+
+  function startLesson() {
+    if (!lessonBlocks.length) return flash("Adicione pelo menos um bloco antes de apresentar");
+    setLessonStep(0);
+    setLessonOpen(true);
+  }
+
+  function chooseMode(mode: (typeof modeCards)[number]["id"]) {
+    setActiveMode(mode);
+    if (mode === "guided") return startLesson();
+    if (mode === "create") return setView("aulas");
+    setView("catalogo");
+    flash(mode === "group" ? "Escolha uma experiência para abrir em grupo" : "Escolha uma experiência para o aluno testar");
   }
 
   function openCatalog(module: ModuleKey | "all" = "all") {
@@ -138,7 +281,8 @@ export default function Home() {
     setInstallPrompt(null);
   }
 
-  const lesson = lessonSteps[lessonStep];
+  const lesson = lessonBlocks[lessonStep] ?? initialLessonBlocks[0];
+  const lessonTopic = topics.find((topic) => topic.id === lesson.topicId) ?? topics[115];
 
   return (
     <div className="app-shell">
@@ -199,15 +343,15 @@ export default function Home() {
             <section className="welcome-row">
               <div>
                 <p className="eyebrow">TERÇA-FEIRA · 4 DE AGOSTO</p>
-                <h1>Como será sua aula hoje?</h1>
-                <p>Escolha um modo. O conteúdo científico entra depois da curiosidade.</p>
+                <h1>Escolha o que você quer fazer</h1>
+                <p>Apresente seu roteiro ou abra uma experiência dos cinco laboratórios.</p>
               </div>
               <button className="secondary-button" onClick={() => setView("aulas")}><span>▤</span> Ver meus roteiros</button>
             </section>
 
             <section className="mode-grid" aria-label="Modos de uso">
               {modeCards.map((mode) => (
-                <button key={mode.id} className={`mode-card ${mode.color} ${activeMode === mode.id ? "selected" : ""}`} onClick={() => setActiveMode(mode.id)}>
+                <button key={mode.id} className={`mode-card ${mode.color} ${activeMode === mode.id ? "selected" : ""}`} onClick={() => chooseMode(mode.id)}>
                   <span className="mode-icon">{mode.icon}</span>
                   <span><strong>{mode.label}</strong><small>{mode.detail}</small></span>
                   <i>↗</i>
@@ -217,18 +361,18 @@ export default function Home() {
 
             <section className="spotlight">
               <div className="spotlight-copy">
-                <span className="live-tag"><i /> AULA DESTAQUE · 35 MIN</span>
-                <p className="spotlight-path">Ensino Médio <b>›</b> Citologia <b>›</b> Bioenergética</p>
-                <h2>Respiração celular:<br /><em>para onde vai a energia?</em></h2>
-                <p>Uma experiência guiada em cinco atos. A turma prevê, manipula o oxigênio e constrói o conceito antes da explicação.</p>
+                <span className="live-tag"><i /> SEU ROTEIRO ATUAL · {lessonDuration} MIN</span>
+                <p className="spotlight-path">{lessonGrade} <b>›</b> {lessonMode} <b>›</b> Editável</p>
+                <h2>{lessonTitle}</h2>
+                <p>Este cartão acompanha todas as alterações feitas no criador de aulas. Edite os blocos e apresente quando estiver pronto.</p>
                 <div className="spotlight-meta">
-                  <span><b>5</b><small>etapas</small></span>
-                  <span><b>3</b><small>paradas</small></span>
-                  <span><b>1</b><small>simulação</small></span>
+                  <span><b>{lessonBlocks.length}</b><small>etapas</small></span>
+                  <span><b>{lessonBlocks.filter((block) => block.module === "biosim").length}</b><small>simulações</small></span>
+                  <span><b>{lessonDuration}</b><small>minutos</small></span>
                 </div>
                 <div className="spotlight-actions">
-                  <button className="primary-button" onClick={() => { setLessonStep(0); setLessonOpen(true); }}>▶ Iniciar aula guiada</button>
-                  <button className="circle-button" onClick={() => flash("Aula salva nos favoritos")} aria-label="Favoritar aula">☆</button>
+                  <button className="primary-button" onClick={startLesson}>▶ Apresentar aos alunos</button>
+                  <button className="secondary-button dark" onClick={() => setView("aulas")}>Editar roteiro</button>
                 </div>
               </div>
               <div className="cell-visual" aria-label="Representação abstrata de uma célula e mitocôndria">
@@ -306,29 +450,30 @@ export default function Home() {
             </section>
             <div className="builder-layout">
               <section className="lesson-canvas">
-                <div className="lesson-title-row"><span className="lesson-badge">AULA 01</span><div><h2>Respiração celular em movimento</h2><p>Ensino Médio · 35 minutos · {builder.length} experiências</p></div><button>•••</button></div>
+                <div className="lesson-title-row"><span className="lesson-badge">ROTEIRO EDITÁVEL</span><div><h2>{lessonTitle}</h2><p>{lessonGrade} · {lessonDuration} minutos · {lessonBlocks.length} etapas</p></div><button onClick={addBlankBlock}>+ Bloco</button></div>
                 <div className="timeline">
-                  {builder.map((topic, index) => (
-                    <article key={topic.id}>
+                  {lessonBlocks.map((block, index) => (
+                    <article key={block.id}>
                       <span className="timeline-number">{String(index + 1).padStart(2, "0")}</span>
-                      <div className={`timeline-card ${modules[topic.module].color}`}>
-                        <i>{modules[topic.module].icon}</i>
-                        <span><small>{modules[topic.module].name} · {topic.category}</small><strong>{topic.title}</strong><p>{topicDescription(topic)}</p></span>
-                        <button onClick={() => setBuilder((items) => items.filter((item) => item.id !== topic.id))} aria-label={`Remover ${topic.title}`}>×</button>
+                      <div className={`timeline-card editable ${modules[block.module].color}`}>
+                        <i>{modules[block.module].icon}</i>
+                        <span className="block-editor"><small>{modules[block.module].name} · {block.category}</small><input value={block.title} onChange={(event) => updateLessonBlock(block.id, { title: event.target.value })} aria-label={`Título da etapa ${index + 1}`} /><textarea value={block.body} onChange={(event) => updateLessonBlock(block.id, { body: event.target.value })} aria-label={`Texto da etapa ${index + 1}`} /><label>Tempo <input type="number" min="1" max="60" value={block.minutes} onChange={(event) => updateLessonBlock(block.id, { minutes: Math.max(1, Number(event.target.value)) })} /> min</label></span>
+                        <div className="block-actions"><button disabled={index === 0} onClick={() => moveLessonBlock(index, -1)} aria-label="Mover etapa para cima">↑</button><button disabled={index === lessonBlocks.length - 1} onClick={() => moveLessonBlock(index, 1)} aria-label="Mover etapa para baixo">↓</button><button onClick={() => setLessonBlocks((items) => items.filter((item) => item.id !== block.id))} aria-label={`Remover ${block.title}`}>×</button></div>
                       </div>
                     </article>
                   ))}
-                  <button className="timeline-add" onClick={() => openCatalog("all")}><span>+</span> Adicionar bloco à aula</button>
+                  <div className="timeline-add-row"><button className="timeline-add" onClick={addBlankBlock}><span>+</span> Criar bloco livre</button><button className="timeline-add" onClick={() => openCatalog("all")}><span>+</span> Adicionar experiência</button></div>
                 </div>
               </section>
               <aside className="builder-panel">
                 <p className="eyebrow">CONFIGURAÇÃO</p>
-                <label>Título da aula<input defaultValue="Respiração celular em movimento" /></label>
-                <div className="form-row"><label>Série<select defaultValue="em"><option value="em">Ensino Médio</option><option>8º ano</option><option>9º ano</option></select></label><label>Duração<select defaultValue="35"><option value="35">35 min</option><option>50 min</option><option>90 min</option></select></label></div>
-                <label>Modo<select defaultValue="Aula guiada"><option>Aula guiada</option><option>Atividade em grupo</option><option>Individual</option></select></label>
-                <div className="builder-summary"><span><b>{builder.length}</b> experiências</span><span><b>{builder.length + 2}</b> perguntas</span><span><b>35</b> min</span></div>
-                <button className="primary-button wide" onClick={() => flash("Roteiro salvo neste protótipo")}>Salvar roteiro</button>
-                <button className="secondary-button wide" onClick={() => { setLessonStep(0); setLessonOpen(true); }}>▶ Apresentar agora</button>
+                <label>Título da aula<input value={lessonTitle} onChange={(event) => setLessonTitle(event.target.value)} /></label>
+                <div className="form-row"><label>Série<select value={lessonGrade} onChange={(event) => setLessonGrade(event.target.value)}><option>Ensino Médio</option><option>8º ano</option><option>9º ano</option></select></label><label>Duração<input type="number" min="10" max="180" value={lessonDuration} onChange={(event) => setLessonDuration(Math.max(10, Number(event.target.value)))} /></label></div>
+                <label>Modo<select value={lessonMode} onChange={(event) => setLessonMode(event.target.value)}><option>Aula guiada</option><option>Atividade em grupo</option><option>Individual</option></select></label>
+                <div className="builder-summary"><span><b>{lessonBlocks.length}</b> etapas</span><span><b>{lessonBlocks.filter((block) => block.topicId).length}</b> experiências</span><span><b>{lessonBlocks.reduce((total, block) => total + block.minutes, 0)}</b> min</span></div>
+                <button className="primary-button wide" onClick={() => flash("Roteiro salvo automaticamente neste dispositivo")}>Salvar roteiro</button>
+                <button className="secondary-button wide" onClick={startLesson}>▶ Apresentar aos alunos</button>
+                <button className="text-button wide" onClick={() => { setLessonTitle("Nova aula investigativa"); setLessonBlocks([{ id: `new-${Date.now()}`, title: "Pergunta inicial", body: "Escreva a pergunta que abrirá a aula.", category: "Bloco personalizado", module: "biolab", minutes: 5 }]); }}>Criar roteiro em branco</button>
               </aside>
             </div>
           </div>
@@ -356,25 +501,29 @@ export default function Home() {
             <p className="modal-lead">{topicDescription(selectedTopic)}</p>
             <div className="pedagogy-flow"><span><b>1</b>Problema</span><i>→</i><span><b>2</b>Hipótese</span><i>→</i><span><b>3</b>Ação</span><i>→</i><span><b>4</b>Reflexão</span></div>
             <div className="modal-detail-grid"><div><small>MODOS INDICADOS</small><strong>Aula guiada · Grupo</strong></div><div><small>DURAÇÃO</small><strong>20–35 minutos</strong></div><div><small>NÍVEL</small><strong>Adaptável</strong></div><div><small>FOCO</small><strong>Raciocínio causal</strong></div></div>
-            <div className="modal-actions"><button className="primary-button" onClick={() => { if (selectedTopic.id >= 116 && selectedTopic.id <= 130) { setSelectedTopic(null); setLessonStep(0); setLessonOpen(true); } else { addToBuilder(selectedTopic); } }}>{selectedTopic.id >= 116 && selectedTopic.id <= 130 ? "▶ Testar experiência" : "+ Adicionar ao roteiro"}</button><button className="secondary-button" onClick={() => flash("Experiência favoritada")}>☆ Favoritar</button></div>
+            <div className="modal-actions"><button className="primary-button" onClick={() => { setExperienceTopic(selectedTopic); setSelectedTopic(null); }}>▶ Abrir experiência</button><button className="secondary-button" onClick={() => addToBuilder(selectedTopic)}>+ Adicionar ao roteiro</button><button className="secondary-button" onClick={() => flash("Experiência favoritada")}>☆</button></div>
           </section>
         </div>
       )}
 
+      {experienceTopic && (
+        <div className={`experience-player ${modules[experienceTopic.module].color}`} role="dialog" aria-modal="true" aria-label={`Experiência ${experienceTopic.title}`}>
+          <header><button onClick={() => setExperienceTopic(null)}>× <span>Fechar experiência</span></button><div><small>{modules[experienceTopic.module].name} · {experienceTopic.category}</small><strong>{experienceTopic.title}</strong></div><button className="add-player-button" onClick={() => addToBuilder(experienceTopic)}>+ Roteiro</button></header>
+          <main><div className="experience-intro"><span>EXPERIÊNCIA {String(experienceTopic.id).padStart(3, "0")}</span><h2>{experienceTopic.title}</h2><p>{topicDescription(experienceTopic)} Os controles abaixo estão ativos: teste, compare e registre sua conclusão.</p></div><ExperienceDemo key={experienceTopic.id} topic={experienceTopic} /></main>
+        </div>
+      )}
+
       {lessonOpen && (
-        <div className="lesson-player" role="dialog" aria-modal="true" aria-label="Aula guiada de respiração celular">
-          <header><button onClick={() => setLessonOpen(false)}>× <span>Sair da apresentação</span></button><div><strong>Respiração celular</strong><small>{lesson.kicker}</small></div><span>{lessonStep + 1} / {lessonSteps.length}</span></header>
-          <div className="lesson-progress"><i style={{ width: `${((lessonStep + 1) / lessonSteps.length) * 100}%` }} /></div>
+        <div className="lesson-player" role="dialog" aria-modal="true" aria-label={`Aula guiada ${lessonTitle}`}>
+          <header><button onClick={() => setLessonOpen(false)}>× <span>Sair da apresentação</span></button><div><strong>{lessonTitle}</strong><small>{lessonGrade} · {lessonMode}</small></div><span>{lessonStep + 1} / {lessonBlocks.length}</span></header>
+          <div className="lesson-progress"><i style={{ width: `${((lessonStep + 1) / lessonBlocks.length) * 100}%` }} /></div>
           <main className="lesson-stage">
-            <section className="lesson-copy"><p>{lesson.kicker}</p><h2>{lesson.title}</h2><div className="lesson-question">{lesson.text}</div><aside><span>?</span><p><strong>Pausa para a turma</strong>{lesson.prompt}</p></aside></section>
+            <section className="lesson-copy"><p>ETAPA {String(lessonStep + 1).padStart(2, "0")}</p><h2>{lesson.title}</h2><div className="lesson-question">{lesson.body}</div></section>
             <section className="lesson-simulation">
-              <div className={`demo-cell oxygen-${oxygen < 35 ? "low" : "high"}`}><div className="demo-mito"><span /><span /><span /><span /></div><i className="pulse p1" /><i className="pulse p2" /><i className="pulse p3" /></div>
-              {lessonStep === 1 && <div className="hypothesis-buttons"><button className={hypothesis === "more" ? "active" : ""} onClick={() => setHypothesis("more")}>↑ Mais ATP</button><button className={hypothesis === "less" ? "active" : ""} onClick={() => setHypothesis("less")}>↓ Menos ATP</button><button className={hypothesis === "same" ? "active" : ""} onClick={() => setHypothesis("same")}>= Igual</button></div>}
-              {lessonStep >= 2 && <div className="oxygen-control"><div><span>Oxigênio disponível</span><strong>{oxygen}%</strong></div><input type="range" min="0" max="100" value={oxygen} onChange={(event) => setOxygen(Number(event.target.value))} /><div className="atp-output"><span>Produção estimada</span><strong>{Math.max(2, Math.round(oxygen * 0.32))} ATP</strong></div></div>}
-              {lessonStep === 0 && <div className="prediction-label">?</div>}
+              <ExperienceDemo key={`${lesson.id}-${lessonStep}`} topic={lessonTopic} compact />
             </section>
           </main>
-          <footer><button disabled={lessonStep === 0} onClick={() => setLessonStep((step) => Math.max(0, step - 1))}>← Anterior</button><div>{lessonSteps.map((_, index) => <i key={index} className={index === lessonStep ? "active" : index < lessonStep ? "done" : ""} />)}</div><button onClick={() => { if (lessonStep === lessonSteps.length - 1) { setLessonOpen(false); flash("Aula concluída — ótimo trabalho!"); } else setLessonStep((step) => step + 1); }}>{lessonStep === lessonSteps.length - 1 ? "Concluir aula" : "Próxima etapa →"}</button></footer>
+          <footer><button disabled={lessonStep === 0} onClick={() => setLessonStep((step) => Math.max(0, step - 1))}>← Anterior</button><div>{lessonBlocks.map((_, index) => <i key={index} className={index === lessonStep ? "active" : index < lessonStep ? "done" : ""} />)}</div><button onClick={() => { if (lessonStep === lessonBlocks.length - 1) { setLessonOpen(false); flash("Apresentação concluída"); } else setLessonStep((step) => step + 1); }}>{lessonStep === lessonBlocks.length - 1 ? "Encerrar" : "Próxima etapa →"}</button></footer>
         </div>
       )}
 
