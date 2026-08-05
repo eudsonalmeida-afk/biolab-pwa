@@ -1,4 +1,4 @@
-const CACHE_NAME = "biolab-pwa-v1";
+const CACHE_NAME = "biolab-pwa-v2";
 const APP_SHELL = ["./", "./manifest.webmanifest", "./icons/biolab-icon.png", "./og.png"];
 
 self.addEventListener("install", (event) => {
