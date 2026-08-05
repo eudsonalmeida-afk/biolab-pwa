@@ -1,0 +1,22 @@
+{
+  "id": ".",
+  "name": "BioLab — Ciência em movimento",
+  "short_name": "BioLab",
+  "description": "150 experiências investigativas para aulas de Ciências e Biologia.",
+  "lang": "pt-BR",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f6f8f5",
+  "theme_color": "#0b2420",
+  "categories": ["education", "science", "productivity"],
+  "icons": [
+    {
+      "src": "icons/biolab-icon.png",
+      "sizes": "1256x1256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
