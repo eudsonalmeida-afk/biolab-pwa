@@ -13,7 +13,7 @@ Um protótipo de plataforma educacional com **150 experiências investigativas**
 
 ## Acessar e instalar
 
-Abra [eudsonalmeida-afk.github.io/biolab-pwa](https://eudsonalmeida-afk.github.io/biolab-pwa/).
+Abra [eudsonalmeida-afk.github.io/BioLab](https://eudsonalmeida-afk.github.io/BioLab/).
 
 No Chrome ou Edge, use o botão **Instalar app** exibido pelo BioLab. No celular, também é possível usar a opção **Adicionar à tela inicial** do navegador.
 
