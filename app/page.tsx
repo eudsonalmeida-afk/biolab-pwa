@@ -33,7 +33,9 @@ const topicGroups: Array<{ category: string; module: ModuleKey; titles: string[]
   { category: "Evolução", module: "biosim", titles: ["Seleção natural", "Deriva genética", "Seleção sexual", "Máquina do tempo evolutiva", "Caminhando entre os dinossauros"] },
   { category: "Ecologia", module: "biosim", titles: ["Ilha ecológica", "Teia alimentar dinâmica", "Sucessão ecológica", "Ecossistema vivo", "Polinização", "Ciclo do carbono", "Ciclo da água"] },
   { category: "Corpo Humano", module: "biosim", titles: ["Coração", "Hormônios", "Potencial de ação", "Sistema imunológico", "Digestão completa", "História de um glóbulo vermelho", "Visão", "Audição", "Olfato", "Paladar", "Ossos", "Músculos", "Desenvolvimento embrionário", "Decisões do cérebro"] },
-  { category: "Microbiologia", module: "bioquest", titles: ["Resistência bacteriana", "Crescimento bacteriano", "Ciclo de vida de um vírus", "História de uma bactéria"] },
+  { category: "BioQuest · Microbiologia e Saúde", module: "bioquest", titles: ["Resistência bacteriana", "Crescimento bacteriano", "Ciclo de vida de um vírus", "História de uma bactéria", "Surto na escola", "O alimento contaminado", "O antibiótico que deixou de funcionar"] },
+  { category: "BioQuest · Ecologia e Ambiente", module: "bioquest", titles: ["CSI Biologia — morte dos peixes", "Extinção — a rã-do-brejo", "Crime ambiental — quem matou o rio?", "Fazenda — por que plantas estão morrendo?"] },
+  { category: "BioQuest · Corpo Humano", module: "bioquest", titles: ["Hospital — qual sistema está afetado?", "Zoológico — por que animais mudaram comportamento?"] },
   { category: "Botânica", module: "biosim", titles: ["Fotossíntese", "Germinação de sementes"] },
   { category: "Química", module: "biosim", titles: ["Ligações químicas", "pH", "Catalisadores e enzimas", "Estados físicos da matéria", "Fluxo de calor", "Conservação da energia", "Funcionamento de uma pilha", "Radioatividade"] },
   { category: "Geologia e Astronomia", module: "biosim", titles: ["Placas tectônicas", "Erosão", "Formação da chuva", "Tornados", "Vulcões", "Campo magnético terrestre", "Estações do ano", "Fases da Lua, eclipses e marés", "Construção de um planeta (clima)"] },
@@ -108,7 +110,7 @@ type LessonBlock = {
 
 const initialLessonBlocks: LessonBlock[] = lessonSteps.map((step, index) => ({
   id: `respiracao-${index + 1}`,
-  topicId: 116 + index,
+  topicId: topics.find((topic) => topic.title === "Hipóxia")?.id,
   title: step.title,
   body: step.text,
   category: "Respiração celular",
@@ -354,12 +356,12 @@ export default function Home() {
           <button className="mobile-brand" onClick={() => setView("inicio")}><span className="brand-mark">B</span> BIOLAB</button>
           <div className="top-search">
             <span>⌕</span>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} onFocus={() => setView("catalogo")} placeholder="Buscar entre 150 experiências..." aria-label="Buscar experiências" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} onFocus={() => setView("catalogo")} placeholder={`Buscar entre ${topics.length} experiências...`} aria-label="Buscar experiências" />
             <kbd>⌘ K</kbd>
           </div>
           <div className="top-actions">
             {installPrompt && <button className="install-button" onClick={installApp}>↓ Instalar app</button>}
-            <span className="content-count"><b>150</b> experiências</span>
+            <span className="content-count"><b>{topics.length}</b> experiências</span>
             <button className="icon-button" aria-label="Notificações">◦</button>
             <span className="avatar">EP</span>
           </div>
@@ -438,11 +440,11 @@ export default function Home() {
         {view === "catalogo" && (
           <div className="page-content catalog-view">
             <section className="catalog-head">
-              <div><p className="eyebrow">BANCO DE EXPERIÊNCIAS</p><h1>Explore os 150 tópicos</h1><p>Da curiosidade ao conceito: encontre o ponto de partida da próxima aula.</p></div>
+              <div><p className="eyebrow">BANCO DE EXPERIÊNCIAS</p><h1>Explore os {topics.length} tópicos</h1><p>Da curiosidade ao conceito: encontre o ponto de partida da próxima aula.</p></div>
               <button className="primary-button" onClick={() => setView("aulas")}>+ Criar roteiro</button>
             </section>
             <div className="module-filter">
-              <button className={activeModule === "all" ? "active" : ""} onClick={() => setActiveModule("all")}>Todos <b>150</b></button>
+              <button className={activeModule === "all" ? "active" : ""} onClick={() => setActiveModule("all")}>Todos <b>{topics.length}</b></button>
               {(Object.keys(modules) as ModuleKey[]).map((key) => (
                 <button key={key} className={activeModule === key ? "active" : ""} onClick={() => setActiveModule(key)}>{modules[key].name} <b>{topics.filter((topic) => topic.module === key).length}</b></button>
               ))}

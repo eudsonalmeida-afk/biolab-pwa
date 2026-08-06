@@ -6,6 +6,7 @@ import {
   ChallengeContent,
   LabContent,
   QuestContent,
+  QuestStage,
   SimContent,
   StoryContent,
   challengeContent,
@@ -84,7 +85,45 @@ function SimExperience({ content, compact }: { content: SimContent; compact: boo
   );
 }
 
+function GuidedQuestExperience({ content, compact }: { content: QuestContent; compact: boolean }) {
+  const stages = content.stages ?? [];
+  const [stageIndex, setStageIndex] = useState(0);
+  const [selectedEvidence, setSelectedEvidence] = useState<number[]>([]);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [confidence, setConfidence] = useState<number | null>(null);
+  const stage: QuestStage = stages[stageIndex];
+  const relevantCount = selectedEvidence.filter((index) => stage.evidence?.[index]?.relevant).length;
+  const ready = stage.kind === "evidence" ? relevantCount >= 2 : stage.options?.length ? selectedOption !== null && (stage.kind !== "hypothesis" || confidence !== null) : true;
+  const atEnd = stageIndex === stages.length - 1;
+  const goTo = (next: number) => { setStageIndex(next); setSelectedEvidence([]); setSelectedOption(null); setConfidence(null); };
+
+  return (
+    <div className={`experience-demo concept-experience quest-demo guided-quest ${compact ? "compact" : ""}`}>
+      <section className="quest-guided-head"><div><span className="phase-label">INVESTIGAÇÃO GUIADA · {stage.phase}</span><h3>{stage.title}</h3><p>{stage.body}</p></div><div className="quest-progress"><strong>{stageIndex + 1}<small>/{stages.length}</small></strong><i><b style={{ width: `${((stageIndex + 1) / stages.length) * 100}%` }} /></i><small>{content.mode ?? "Aula guiada"}</small></div></section>
+      <div className="quest-guided-layout">
+        <aside className="quest-stage-list">{stages.map((item, index) => <button key={item.id} className={index === stageIndex ? "active" : index < stageIndex ? "done" : ""} disabled={index > stageIndex} onClick={() => goTo(index)}><b>{String(index + 1).padStart(2, "0")}</b><span>{item.phase.split("·")[1]?.trim() ?? item.phase}</span></button>)}</aside>
+        <section className="quest-guided-workspace">
+          {stage.prompt && <h4>{stage.prompt}</h4>}
+          {stage.kind === "hypothesis" && <div className="confidence-row"><span>Confiança na previsão</span>{["baixa", "média", "alta"].map((label, index) => <button key={label} className={confidence === index ? "selected" : ""} onClick={() => setConfidence(index)}>{label}</button>)}</div>}
+          {stage.evidence && <div className="evidence-list">{stage.evidence.map((item, index) => <button key={item.text} className={selectedEvidence.includes(index) ? "selected" : ""} onClick={() => setSelectedEvidence((items) => items.includes(index) ? items.filter((value) => value !== index) : [...items, index])}><b>{index + 1}</b><span>{item.text}</span><small>{item.strength ?? "dado"}</small></button>)}</div>}
+          {stage.options && <div className="decision-panel">{stage.options.map((item, index) => <button key={item.text} className={selectedOption === index ? `selected ${item.correct ? "correct" : "review"}` : ""} onClick={() => setSelectedOption(index)}><b>{String.fromCharCode(65 + index)}</b>{item.text}</button>)}{selectedOption !== null && <div className={`feedback show ${stage.options[selectedOption].correct ? "correct" : "review"}`}>{stage.options[selectedOption].feedback}</div>}</div>}
+          {stage.kind === "evidence" && <p className="quest-evidence-status">{relevantCount} evidência(s) relevante(s) selecionada(s). Selecione pelo menos duas antes de concluir.</p>}
+          {stage.kind === "formalization" && <section className="concept-reveal revealed"><span className="phase-label">FORMALIZAÇÃO</span><p>{content.concept}</p><aside><b>Concepção a revisar:</b> {content.misconception}</aside></section>}
+          {stage.teacherNote && <aside className="quest-teacher-note"><b>Pausa para mediação</b>{stage.teacherNote}</aside>}
+        </section>
+      </div>
+      <footer className="quest-guided-nav"><button disabled={stageIndex === 0} onClick={() => goTo(stageIndex - 1)}>← Anterior</button><span>{ready ? "Resposta registrada" : stage.kind === "evidence" ? "Escolha duas evidências relevantes" : "Registre sua resposta para continuar"}</span><button disabled={!ready} onClick={() => atEnd ? goTo(0) : goTo(stageIndex + 1)}>{atEnd ? "Recomeçar investigação" : "Próxima etapa →"}</button></footer>
+      <a className="science-source" href={content.source.url} target="_blank" rel="noreferrer">Base científica: {content.source.label} ↗</a>
+    </div>
+  );
+}
+
 function QuestExperience({ content, compact }: { content: QuestContent; compact: boolean }) {
+  if (content.stages?.length) return <GuidedQuestExperience content={content} compact={compact} />;
+  return <LegacyQuestExperience content={content} compact={compact} />;
+}
+
+function LegacyQuestExperience({ content, compact }: { content: QuestContent; compact: boolean }) {
   const [selected, setSelected] = useState<number[]>([]);
   const [hypothesis, setHypothesis] = useState<number | null>(null);
   const relevantSelected = selected.filter((index) => content.evidence[index]?.relevant).length;
@@ -196,4 +235,3 @@ export function ExperienceDemo({ topic, compact = false }: { topic: ActivityTopi
   if (topic.module === "biostory") return <StoryExperience content={storyContent[topic.title]} compact={compact} />;
   return <LabExperience content={labContent[topic.title]} compact={compact} />;
 }
-

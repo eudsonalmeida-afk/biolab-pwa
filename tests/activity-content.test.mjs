@@ -15,12 +15,12 @@ function profileTitles() {
   return [...data.matchAll(/^\s+\["([^"]+)",/gm)].map((match) => match[1]);
 }
 
-test("as 150 experiências possuem perfil científico individual", () => {
+test("as 159 experiências possuem perfil científico individual", () => {
   const catalog = catalogTitles();
   const profiles = profileTitles();
-  assert.equal(catalog.length, 150);
-  assert.equal(profiles.length, 150);
-  assert.equal(new Set(profiles).size, 150);
+  assert.equal(catalog.length, 159);
+  assert.equal(profiles.length, 159);
+  assert.equal(new Set(profiles).size, 159);
   assert.deepEqual(new Set(profiles), new Set(catalog));
 });
 
@@ -34,7 +34,7 @@ test("o catálogo não usa mais os controles e textos genéricos", () => {
 test("cada laboratório usa seu conjunto esperado de conteúdos", () => {
   const sections = [
     ["simRows", "questRows", 87],
-    ["questRows", "storyRows", 9],
+    ["questRows", "storyRows", 18],
     ["storyRows", "challengeRows", 13],
     ["challengeRows", "labRows", 36],
     ["labRows", "export const labContent", 5],
@@ -44,4 +44,3 @@ test("cada laboratório usa seu conjunto esperado de conteúdos", () => {
     assert.equal([...block.matchAll(/^\s+\["/gm)].length, expected, `${start} deve conter ${expected} perfis`);
   }
 });
-

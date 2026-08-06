@@ -1,12 +1,13 @@
 # BioLab — Ciência em movimento
 
-Um protótipo de plataforma educacional com **150 experiências investigativas** para aulas de Ciências e Biologia.
+Uma plataforma educacional com **159 experiências investigativas** para aulas de Ciências e Biologia.
 
 ## O que está no protótipo
 
 - **5 laboratórios:** BioSim, BioQuest, BioChallenge, BioStory e BioLab.
 - **4 modos de uso:** aula guiada, atividade em grupo, atividade individual e criação de aula.
-- Catálogo pesquisável com todos os 150 tópicos.
+- Catálogo pesquisável com todos os 159 tópicos.
+- BioQuest com 13 casos completos, organizados em problema, recuperação, hipótese, evidências, conclusão provisória, surpresa, revisão, formalização e transferência.
 - Favoritos e seleção de experiências para montar aulas.
 - Aula interativa demonstrativa sobre respiração celular.
 - PWA instalável em computador e celular, com suporte offline após o primeiro acesso.

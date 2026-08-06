@@ -1,3 +1,5 @@
+import { detailedBioQuestContent } from "./bioquest-data";
+
 export type MechanicKind = "system" | "flow" | "sequence" | "population" | "network" | "organ" | "cycle" | "energy" | "orbit";
 
 export type ActivityTopic = {
@@ -137,6 +139,18 @@ export const simContent = Object.fromEntries(simRows.map(([title, mechanic, phen
   mechanic, phenomenon, question, controlA, controlB, output, concept, misconception, source: scientificSources[source],
 }])) as Record<string, SimContent>;
 
+export type QuestStage = {
+  id: string;
+  phase: string;
+  kind: "case" | "retrieval" | "hypothesis" | "evidence" | "selection" | "surprise" | "revision" | "formalization" | "transfer";
+  title: string;
+  body: string;
+  prompt?: string;
+  options?: Array<{ text: string; correct: boolean; feedback: string }>;
+  evidence?: Array<{ text: string; relevant?: boolean; strength?: "strong" | "moderate" | "ambiguous" | "weak"; feedback?: string }>;
+  teacherNote?: string;
+};
+
 export type QuestContent = {
   caseText: string;
   question: string;
@@ -145,6 +159,11 @@ export type QuestContent = {
   concept: string;
   misconception: string;
   source: ScientificSource;
+  stages?: QuestStage[];
+  transfer?: string;
+  duration?: string;
+  gradeBand?: string;
+  mode?: string;
 };
 
 type QuestRow = [string, string, string, string, string, string, string, string, string, string, string];
@@ -153,6 +172,15 @@ const questRows: QuestRow[] = [
   ["Crescimento bacteriano", "Uma cultura cresce, estabiliza e depois perde células viáveis em um frasco fechado.", "Que evidências distinguem limitação de nutrientes de falta de reprodução?", "A contagem cresce exponencialmente no início.", "Nutrientes caem e resíduos se acumulam antes do platô.", "Ao transferir células para meio novo, o crescimento recomeça.", "Bactérias param porque decidem não se dividir.", "O platô resulta do balanço entre divisão e morte sob recursos limitados.", "Culturas fechadas passam por fases lag, exponencial, estacionária e declínio.", "A fase estacionária não significa que todas as células estejam inativas.", "microbiology"],
   ["Ciclo de vida de um vírus", "Células expostas a partículas virais passam a produzir novas partículas.", "Qual sequência explica a dependência do vírus em relação à célula hospedeira?", "Partículas se ligam a receptores específicos da célula.", "O genoma viral é copiado usando componentes celulares e virais.", "Novas partículas são montadas e liberadas.", "O vírus cresce sozinho consumindo nutrientes do meio.", "Ligação, entrada, replicação, montagem e saída formam um ciclo dependente da célula.", "Vírus usam células para produzir componentes e podem ter ciclos e estratégias diversos.", "Vírus não são pequenas bactérias e antibióticos não bloqueiam seu ciclo.", "microbiology"],
   ["História de uma bactéria", "Uma bactéria intestinal encontra ambientes com pH, nutrientes e competidores diferentes.", "Quais evidências explicam por que ela prospera em um local e não em outro?", "Seu crescimento muda quando a fonte de carbono é trocada.", "A microbiota vizinha compete por espaço e nutrientes.", "Genes são ativados conforme sinais do ambiente.", "Toda bactéria causa doença sempre que entra no corpo.", "A mesma bactéria responde plasticamente ao ambiente e interage com uma comunidade.", "Bactérias ocupam nichos, regulam genes e muitas vivem em relações neutras ou benéficas.", "Bactéria não é sinônimo de patógeno.", "microbiology"],
+  ["Surto na escola", "Em uma escola, estudantes de turmas diferentes apresentam sintomas gastrointestinais ao longo de dois dias.", "O padrão aponta para uma fonte comum, transmissão entre pessoas ou mais de um processo?", "Os primeiros casos ocorreram após uma atividade coletiva.", "Casos secundários aparecem depois entre contatos próximos.", "A curva temporal é compatível com propagação.", "Todos os casos vieram do alimento do primeiro dia.", "O padrão combina exposição inicial e transmissão posterior; é preciso comparar contatos e fontes.", "Investigar um surto exige comparar tempo, turma, exposição, contatos e amostras.", "Correlação temporal não prova uma fonte única.", "inquiry"],
+  ["O alimento contaminado", "Várias pessoas adoecem depois de uma refeição. Nem todos comeram os mesmos itens.", "Como investigar a origem sem confundir coincidência com causa?", "A curva de sintomas se concentra após a refeição.", "O item suspeito foi consumido por quase todos os doentes.", "O mesmo agente aparece em pacientes e na amostra do item.", "O último alimento servido foi necessariamente a causa.", "A hipótese mais forte combina exposição comum, temporalidade e evidência laboratorial.", "Surtos exigem comparar exposições, tempo, amostras e fontes alternativas.", "A aparência do alimento não prova contaminação.", "microbiology"],
+  ["O antibiótico que deixou de funcionar", "Um antibiótico controlava uma infecção, mas a nova cultura mostra crescimento na mesma dose.", "O que precisa ser testado antes de concluir que o medicamento falhou?", "A concentração inibitória mínima aumentou.", "A linhagem recuperada tem perfil semelhante.", "A dose foi tomada de forma irregular.", "O paciente criou resistência ao antibiótico.", "A falha deve ser investigada com teste de sensibilidade e dados de exposição.", "Resistência, adesão, dose, biofilme e reinfecção podem produzir falha aparente.", "Uma piora isolada não prova resistência.", "microbiology"],
+  ["CSI Biologia — morte dos peixes", "Peixes aparecem mortos em um lago depois de mudança na cor da água e de uma chuva intensa.", "Qual cadeia de eventos conecta a mudança do lago à mortalidade?", "O oxigênio dissolvido cai antes do amanhecer.", "Nutrientes aumentam após o escoamento da chuva.", "A mortalidade se concentra onde há mais matéria orgânica.", "A chuva matou os peixes diretamente.", "Nutrientes, algas, decomposição e queda de oxigênio formam uma explicação plausível.", "Eutrofização conecta nutrientes, algas, decomposição e hipóxia.", "Água verde não prova sozinha a causa.", "ecology"],
+  ["Extinção — a rã-do-brejo", "Uma população de rãs diminui em uma área úmida onde a água ainda parece presente.", "Como separar perda de habitat, doença e efeito de predadores?", "A área alagada seca antes da reprodução.", "Indivíduos apresentam lesões compatíveis com doença.", "Fragmentos vizinhos não têm conexão.", "A espécie desapareceu apenas porque há predadores.", "A queda combina habitat, risco sanitário e isolamento.", "Extinção local resulta da interação entre habitat, doenças, predadores e conectividade.", "Encontrar água não garante habitat adequado.", "ecology"],
+  ["Crime ambiental — quem matou o rio?", "Um rio recebe uma descarga irregular e depois apresenta espuma, odor e redução de invertebrados.", "Como atribuir a causa sem confundir presença de poluente com efeito?", "A concentração aumenta a jusante da descarga.", "A comunidade de invertebrados muda em um gradiente.", "A substância aparece na amostra da tubulação.", "Qualquer substância encontrada é automaticamente a causa.", "Fonte, gradiente espacial, tempo e resposta biológica convergem.", "Diagnóstico ambiental combina fonte, trajetória, concentração, tempo e indicadores.", "Presença de substância não prova todo o impacto.", "ecology"],
+  ["Fazenda — por que plantas estão morrendo?", "Plantas da mesma variedade murcham em uma faixa da fazenda, embora o solo pareça úmido.", "Que variável pode estar impedindo a absorção de água?", "A condutividade elétrica do solo é maior.", "Raízes apresentam danos nas pontas.", "Irrigação aumenta a umidade sem recuperar o turgor.", "Basta adicionar mais água.", "Salinidade e dano radicular reduzem a entrada de água mesmo com solo úmido.", "Água disponível não é o mesmo que água absorvível.", "Murcha não prova falta de água.", "plant"],
+  ["Hospital — qual sistema está afetado?", "Uma pessoa apresenta respiração acelerada, cansaço e alteração ácido-base após uma infecção.", "Como ventilação, troca gasosa e circulação localizam o problema?", "A saturação arterial está baixa apesar da ventilação aumentada.", "A imagem mostra regiões com líquido.", "A perfusão é desigual.", "Respirar rápido significa que o coração é a causa.", "Ventilação, difusão e perfusão precisam ser comparadas.", "Sintomas semelhantes podem surgir por falhas diferentes no sistema respiratório.", "Respirar mais não garante mais oxigênio nos tecidos.", "physiology"],
+  ["Zoológico — por que animais mudaram comportamento?", "Animais passam a se esconder e reduzir a alimentação após uma reforma próxima.", "Como investigar estresse ambiental sem atribuir o comportamento a uma causa única?", "A alteração começou após aumento de ruído e vibração.", "O padrão diminui com abrigo e som previsível.", "Espécies diferentes respondem de modos distintos.", "Os animais ficaram tristes por causa da reforma.", "A hipótese fica mais forte com estímulo, resposta e intervenção controlada.", "Comportamento emerge da interação entre estímulos, necessidades e ambiente.", "Mudança de comportamento não revela sozinha a causa.", "inquiry"],
   ["E se a Terra parasse de girar?", "Um modelo reduz gradualmente a rotação terrestre, mantendo massa e órbita constantes.", "Quais consequências decorrem diretamente da perda de rotação e quais são especulação?", "O ciclo dia-noite tenderia a acompanhar o ano orbital.", "A circulação atmosférica perderia grande parte do efeito de Coriolis.", "A redistribuição dos oceanos e da atmosfera seria extrema e lenta.", "A gravidade desapareceria imediatamente em toda a superfície.", "A rotação afeta ciclos de iluminação, circulação e forma do planeta, mas não é a fonte principal da gravidade.", "Reduzir a rotação reorganiza iluminação e circulação sem eliminar a atração gravitacional da massa terrestre.", "Sem rotação, a Terra ainda teria gravidade devido à sua massa.", "nasa"],
   ["E se a gravidade fosse menor?", "Um planeta com a mesma atmosfera e raio recebe uma gravidade superficial reduzida no modelo.", "Que mudanças são consequências plausíveis de menor aceleração gravitacional?", "Objetos teriam menor peso, mas a mesma massa.", "Saltos e trajetórias balísticas durariam mais.", "Reter gases leves na atmosfera seria mais difícil ao longo do tempo.", "Todos os organismos cresceriam gigantes instantaneamente.", "Gravidade influencia movimento, circulação e retenção atmosférica; respostas biológicas dependeriam de muitas gerações.", "Menor gravidade muda peso e trajetórias de imediato, mas mudanças biológicas dependem de fisiologia e evolução.", "Massa e peso não são a mesma grandeza.", "nasa"],
   ["E se não existissem bactérias?", "Um cenário remove todas as bactérias de ecossistemas, organismos e ciclos biogeoquímicos.", "Quais evidências mostram que o efeito não seria apenas o fim de doenças bacterianas?", "Decomposição e reciclagem de nutrientes cairiam drasticamente.", "Fixação de nitrogênio e microbiomas seriam interrompidos.", "Muitas cadeias alimentares e relações simbióticas perderiam funções essenciais.", "A vida ficaria automaticamente mais saudável sem germes.", "Bactérias sustentam ciclos, simbioses e produção; uma minoria é patogênica.", "A remoção de bactérias interromperia funções ecológicas e fisiológicas essenciais muito antes de representar apenas menos doenças.", "Microrganismos não são apenas agentes de doença.", "microbiology"],
@@ -281,7 +309,8 @@ export const labContent = Object.fromEntries(labRows.map(([title, scenario, ques
 export type ActivityContent = SimContent | QuestContent | ChallengeContent | StoryContent | LabContent;
 
 export function contentFor(title: string): ActivityContent | undefined {
-  return (simContent as Partial<Record<string, SimContent>>)[title]
+  return (detailedBioQuestContent as Partial<Record<string, QuestContent>>)[title]
+    ?? (simContent as Partial<Record<string, SimContent>>)[title]
     ?? (questContent as Partial<Record<string, QuestContent>>)[title]
     ?? (challengeContent as Partial<Record<string, ChallengeContent>>)[title]
     ?? (storyContent as Partial<Record<string, StoryContent>>)[title]
